@@ -15,7 +15,7 @@ class ArmController:
         rospy.Subscriber('arm/pickplace', PoseArray, self.pickplace)
         rospy.init_node('arm_controller', anonymous=True)
         self.robot = Robot('locobot')
-        self.offset = [0.085, 0.0, 0.10]
+        self.offset = [0.085, 0.0, 0.0]
         rospy.sleep(1)
 
     def goTo(self, msg):
