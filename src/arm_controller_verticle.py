@@ -22,7 +22,7 @@ class ArmController:
 	x = msg.position.x + self.offset[0]
 	y = msg.position.y + self.offset[1]
 	z = msg.position.z + self.offset[2]
-	pose = {"position": np.array([x, y, z]), "pitch": 1.5, "roll": 0, "numerical": False}
+	pose = {"position": np.array([x, y, z]), "pitch": 0, "roll": 0, "numerical": False}
         #euler = quaternion_from_euler(msg.orientation)
 	
 	#pitch = 0
