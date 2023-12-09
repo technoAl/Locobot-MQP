@@ -49,22 +49,22 @@ class ArmController:
     def pickplace(self, msg):
         object_pose = msg.poses[0]
         target_pose = msg.poses[1]
-        self.goTo_method(0.25, 0.0, 0.15)
+        self.robot.arm.go_home()
         rospy.sleep(0.1)
         self.robot.gripper.open()
-        self.goTo_method(object_pose.position.x, object_pose.position.y, object_pose.position.z + 0.1)
+        self.goTo_method(object_pose.position.x, object_pose.position.y, 0.3)
         rospy.sleep(0.1)    
         self.goTo_method(object_pose.position.x, object_pose.position.y, object_pose.position.z)
         self.robot.gripper.close()
         rospy.sleep(0.1)    
-        self.goTo_method(object_pose.position.x, object_pose.position.y, object_pose.position.z + 0.1)
+        self.goTo_method(object_pose.position.x, object_pose.position.y, 0.3)
         rospy.sleep(0.1)
-        self.goTo_method(target_pose.position.x, target_pose.position.y, target_pose.position.z + 0.1)
+        self.goTo_method(target_pose.position.x, target_pose.position.y, 0.3)
         rospy.sleep(0.1)
         self.goTo_method(target_pose.position.x, target_pose.position.y, target_pose.position.z)
         self.robot.gripper.open()
         rospy.sleep(0.1)
-        self.goTo_method(target_pose.position.x, target_pose.position.y, target_pose.position.z + 0.1)
+        self.goTo_method(target_pose.position.x, target_pose.position.y, 0.3)
 
     def run(self):
         self.robot.gripper.open()
