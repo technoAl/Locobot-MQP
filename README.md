@@ -8,10 +8,11 @@ Please see [PyRobot Read the docs](https://pyrobot-next.readthedocs.io/en/api_0.
 # Setup & Getting Running
 
 To run the Arm:
-- Source the Environment
+- Source the Environment:
 ```source ~/pyenv_pyrobot_python2/bin/activate```
-- Run the Arm Nodes
+- Run the Arm Nodes:
 ```roslaunch locobot_control main.launch use_arm:=true```
 
 To run our arm controller just run it like any other python file (don't try to rosrun, it will likely break)
+
 ```python arm_controller_vertical.py```
