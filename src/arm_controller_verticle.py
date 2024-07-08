@@ -10,36 +10,37 @@ import math
 
 class ArmController:
 
-    def __init__(self):
-        rospy.Subscriber('arm/go_to', Pose, self.goTo)
-        rospy.Subscriber('arm/grip', Bool, self.gripperUpdate)
-        rospy.Subscriber('arm/pickplace', PoseArray, self.pickplace)
-	rospy.Subscriber('arm/pickhold', PoseArray, self.pickhold)
-	rospy.Subscriber('arm/pour', Float32, self.pour)
-	rospy.Subscriber('arm/pour_toggle', Bool, self.toggle)
-	rospy.Subscriber('objects', TFMessage, self.update_cup_positions)
-	rospy.Subscriber('/arm/pickup/blue_cup', Bool, self.pickup_blue_cup)
-	rospy.Subscriber('arm/go_home', Bool, self.table_home)
-	rospy.Subscriber('arm/place_in_box', Bool, self.place_in_box)
-	self.command_pub = rospy.Publisher('unity/commands', String, queue_size=1)
-	rospy.Subscriber('arm/pour_adjust', Point, self.pour_adjust)
-	rospy.Subscriber('arm/pickup_adjust', Point, self.pickup_adjust, queue_size=1)
-	rospy.Subscriber('arm/pickup_toggle', Bool, self.pickup_toggle)
-	rospy.init_node('arm_controller', anonymous =True)
-        self.robot = Robot('locobot')
+	def __init__(self):
+		
+    	rospy.Subscriber('arm/go_to', Pose, self.goTo)
+    	rospy.Subscriber('arm/grip', Bool, self.gripperUpdate)
+    	rospy.Subscriber('arm/pickplace', PoseArray, self.pickplace)
+		rospy.Subscriber('arm/pickhold', PoseArray, self.pickhold)
+		rospy.Subscriber('arm/pour', Float32, self.pour)
+		rospy.Subscriber('arm/pour_toggle', Bool, self.toggle)
+		rospy.Subscriber('objects', TFMessage, self.update_cup_positions)
+		rospy.Subscriber('/arm/pickup/blue_cup', Bool, self.pickup_blue_cup)
+		rospy.Subscriber('arm/go_home', Bool, self.table_home)
+		rospy.Subscriber('arm/place_in_box', Bool, self.place_in_box)
+		self.command_pub = rospy.Publisher('unity/commands', String, queue_size=1)
+		rospy.Subscriber('arm/pour_adjust', Point, self.pour_adjust)
+		rospy.Subscriber('arm/pickup_adjust', Point, self.pickup_adjust, queue_size=1)
+		rospy.Subscriber('arm/pickup_toggle', Bool, self.pickup_toggle)
+		rospy.init_node('arm_controller', anonymous =True)
+    	self.robot = Robot('locobot')
         self.offset = [0.085, 0.0, 0.0]
-	self.pitch = 0
-	self.is_spin = False
-	self.toggle_pickup = False
-	self.position = []
-	self.adjusted_pos = []
-	self.blue_cup_trans = []
-	self.blue_cup_rot = []
-	self.white_cup_trans = []
-	self.white_cup_rot = []
-	self.box_trans = []
-	self.box_rot = []
-	self.yaw = 0
+		self.pitch = 0
+		self.is_spin = False
+		self.toggle_pickup = False
+		self.position = []
+		self.adjusted_pos = []
+		self.blue_cup_trans = []
+		self.blue_cup_rot = []
+		self.white_cup_trans = []
+		self.white_cup_rot = []
+		self.box_trans = []
+		self.box_rot = []
+		self.yaw = 0
         rospy.sleep(1)
 
     def update_cup_positions(self, msg):
