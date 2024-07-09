@@ -19,13 +19,14 @@ class ArmSort:
 		rospy.Subscriber('arm/pickup_toggle', Bool, self.pickup_toggle)
 		rospy.Subscriber('arm/go_home', Bool, self.table_home)
 		rospy.Subscriber('arm/insert', Bool, self.insert)
-		rospy.Subscriber('arm/insert_toggle', Bool, self.insert_2)
+		rospy.Subscriber('arm/insert_toggle', Bool, self.insert_toggle)
 		rospy.Subscriber('arm/insert_adjust', Point, self.insert_adjust, queue_size=1)
 		#rospy.Subscriber('arm/grip', Bool, self.gripperUpdate)
 		#rospy.Subscriber('arm/insert', Point, self.insert, queue_size=1)
-		#self.command_pub = rospy.Publisher('unity/commands', String, queue_size=1)
+		self.command_pub = rospy.Publisher('unity/commands', String, queue_size=1)
 		rospy.init_node('arm_controller', anonymous =True)
 		self.robot = Robot('locobot')
+		self.offset = [0.085, 0.0, 0.0]
 		self.red_prism_rot = []
 		self.red_prism_trans = []
 		self.blue_prism_rot = []
@@ -44,7 +45,7 @@ class ArmSort:
 	def update_positions(self, msg):
 		transforms = msg.transforms
 		for transform in transforms:
-			if transform.child_frame_id == "red_prism_center":
+			if transform.child_frame_id == "red_prism":
 				rotation = transform.transform.rotation
 				self.red_prism_rot = euler_from_quaternion([rotation.x, rotation.y, rotation.z, rotation.w])
 				self.red_prism_trans = transform.transform.translation
@@ -61,17 +62,16 @@ class ArmSort:
 		self.go_to_vertical(np.array([data[0], data[1], 0.14]), yaw)
 
 	def pickup_prism(self, msg):
-		if msg.data == "red":
+		if msg.data == "Red":
 			self.toggle_pickup = False
 			self.robot.gripper.open()
 			object_pose = [self.red_prism_trans.x, self.red_prism_trans.y, self.red_prism_trans.z]
 			self.yaw = self.red_prism_rot[2]
 			self.pickup_prism_helper(object_pose, self.red_prism_rot[2] + 3.14)
-			# self.command_pub.publish("arm hover")
+			self.command_pub.publish("pickup adjust")
 
 	
 	def pickup_toggle(self,msg):
-		print("fuck")
 		if msg.data:
 			trans, rot, quat = self.robot.arm.pose_ee
 			self.position = np.array(trans)
@@ -84,30 +84,26 @@ class ArmSort:
 
 
 	def pickup_adjust(self, msg):
-		pass
-	# 	if self.toggle_pickup:
-	# 		#trans, rot, quat = self.robot.arm.pose_ee
-	# 	#position = np.array(trans)
+		if self.toggle_pickup:
+			#trans, rot, quat = self.robot.arm.pose_ee
+		#position = np.array(trans)
 		
-	# 	#x = position[0]
-	# 	#y = position[1]
-	# 	#z = position[2]
-	# 		x1 = msg.z
-	# 		y1 = -msg.x
-	# 		#theta = math.atan2(y, x)
+		#x = position[0]
+		#y = position[1]
+		#z = position[2]
+			x1 = msg.z
+			y1 = -msg.x
+			#theta = math.atan2(y, x)
 			
-	# 		#x -= (x1 * math.cos(theta) + y1 * math.sin(theta))], 0)
-		self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, self.red_insert.z + 0.17], 0)
-		self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.13], 0)
-		self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.1], 0)
-		self.go_to_pitch([self.red_insert.x - 0.13, self.red_insert.y, self.red_insert.z], 0.04)
-	# 		#y -= (x1 * math.sin(theta) + y1 * math.cos(theta))
-	# 		#adjusted_pos = np.array([x ,y, z-0.1])
-	# 		#print(str(x) +" "  + str(y))
+			#x -= (x1 * math.cos(theta) + y1 * math.sin(theta))], 0)
+
+			#y -= (x1 * math.sin(theta) + y1 * math.cos(theta))
+			#adjusted_pos = np.array([x ,y, z-0.1])
+			#print(str(x) +" "  + str(y))
 			
-	# 		self.adjusted_pos = [self.position[0] + x1, self.position[1] + y1, self.position[2] - 0.1]
-	# 		rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
-	# 		self.go_to_vertical(self.adjusted_pos, self.yaw)
+			self.adjusted_pos = [self.position[0] + x1, self.position[1] + y1, self.position[2] - 0.1]
+			rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
+			self.go_to_vertical(self.adjusted_pos, self.yaw)
 
 	
 	def pickup_prism_part2(self):
@@ -135,16 +131,40 @@ class ArmSort:
 			self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.13], 0)
 			self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.1], 0)
 			self.go_to_pitch([self.red_insert.x - 0.18, self.red_insert.y, self.red_insert.z + 0.03],0)
+			self.command_pub.publish("insert adjust")
 	
 	def insert_toggle(self, msg):
-
 		if msg.data:
-			# self.go_to_pitch([self.red_insert.x - 0.10, self.red_insert.y, self.red_insert.z + 0.05], 0)
-			# self.go_to_pitch([self.red_insert.x - 0.07, self.red_insert.y, self.red_insert.z + 0.05], 0)
+			trans, rot, quat = self.robot.arm.pose_ee
+			self.position = np.array(trans)
+			self.toggle_pickup = True
+		elif not msg.data and self.toggle_pickup:
 			self.go_to_pitch([self.red_insert.x - 0.04, self.red_insert.y, self.red_insert.z + 0.05], 0)
+			self.toggle_pickup  = False
+		else:
+			self.toggle_pickup = False
 
 	def insert_adjust(self, msg):
-		break
+		if self.toggle_pickup:
+			#trans, rot, quat = self.robot.arm.pose_ee
+		#position = np.array(trans)
+		
+		#x = position[0]
+		#y = position[1]
+		#z = position[2]
+			x1 = msg.z
+			y1 = -msg.x
+			#theta = math.atan2(y, x)
+			
+			#x -= (x1 * math.cos(theta) + y1 * math.sin(theta))], 0)
+
+			#y -= (x1 * math.sin(theta) + y1 * math.cos(theta))
+			#adjusted_pos = np.array([x ,y, z-0.1])
+			#print(str(x) +" "  + str(y))
+			
+			self.adjusted_pos = [self.position[0] + x1, self.position[1] + y1, self.position[2] - 0.1]
+			rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
+			self.go_to_vertical(self.adjusted_pos, self.yaw)
 
 	def go_to_vertical(self, pos, roll):
 		pose = {"position": np.array([pos[0], pos[1], pos[2] + 0.10]), "pitch": 1.57, "roll": roll, "numerical":False, "plan": False}
