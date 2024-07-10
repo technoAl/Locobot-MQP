@@ -18,7 +18,7 @@ class ArmSort:
 		rospy.Subscriber('arm/pickup_adjust', Point, self.pickup_adjust, queue_size=1)
 		rospy.Subscriber('arm/pickup_toggle', Bool, self.pickup_toggle)
 		rospy.Subscriber('arm/go_home', Bool, self.table_home)
-		rospy.Subscriber('arm/insert', Bool, self.insert)
+		#rospy.Subscriber('arm/insert', Bool, self.insert)
 		rospy.Subscriber('arm/insert_toggle', Bool, self.insert_toggle)
 		rospy.Subscriber('arm/insert_adjust', Point, self.insert_adjust, queue_size=1)
 		#rospy.Subscriber('arm/grip', Bool, self.gripperUpdate)
@@ -108,11 +108,13 @@ class ArmSort:
 	
 	def pickup_prism_part2(self):
 
-		self.go_to_vertical(np.array([self.position[0], self.position[1], 0.09]), self.yaw)
+		self.go_to_vertical(np.array([self.adjusted_position[0], self.adjusted_position[1], 0.075]), self.yaw)
 
 		self.robot.gripper.close()
 
-		self.go_to_vertical(np.array([self.position[0], self.position[1], 0.13]), self.yaw)
+		self.go_to_vertical(np.array([self.adjusted_position[0], self.adjusted_position[1], 0.13]), self.yaw)
+
+		self.insert()
 
 	def go_to(self,msg):
 		x = msg.position.x
@@ -122,16 +124,17 @@ class ArmSort:
 
 		self.robot.arm.set_ee_pose_pitch_roll(**pose)
 	
-	def insert(self, msg):
-		if msg.data:
-			self.robot.arm.go_home()
-			# self.go_to_vertical([self.red_insert.x - 0.15, self.red_insert.y, self.red_insert.z + 0.2], self.yaw)
-			# self.go_to_pitch([self.red_insert.x - 0.15, self.red_insert.y, self.red_insert.z + 0.2], 0)
-			self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, self.red_insert.z + 0.17], 0)
-			self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.13], 0)
-			self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.1], 0)
-			self.go_to_pitch([self.red_insert.x - 0.18, self.red_insert.y, self.red_insert.z + 0.03],0)
-			self.command_pub.publish("insert adjust")
+	def insert(self):
+		# if msg.data:
+		self.robot.arm.go_home()
+		# self.go_to_vertical([self.red_insert.x - 0.15, self.red_insert.y, self.red_insert.z + 0.2], self.yaw)
+		# self.go_to_pitch([self.red_insert.x - 0.15, self.red_insert.y, self.red_insert.z + 0.2], 0)
+		self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, self.red_insert.z + 0.17], 0)
+		self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.13], 0)
+		self.go_to_pitch([self.red_insert.x - 0.23, self.red_insert.y, self.red_insert.z + 0.1], 0)
+		self.go_to_pitch([self.red_insert.x - 0.18, self.red_insert.y, self.red_insert.z + 0.03],0)
+		rospy.loginfo("WAITING TO INSERT")
+		self.command_pub.publish("insert adjust")
 	
 	def insert_toggle(self, msg):
 		if msg.data:
