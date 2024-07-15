@@ -18,6 +18,7 @@ class ArmSort:
 		rospy.Subscriber('arm/pickup_adjust', Point, self.pickup_adjust, queue_size=1)
 		rospy.Subscriber('arm/pickup_toggle', Bool, self.pickup_toggle)
 		rospy.Subscriber('arm/go_home', Bool, self.table_home)
+		rospy.Subscriber('arm/test', String, self.test)
 		#rospy.Subscriber('arm/insert', Bool, self.insert)
 		rospy.Subscriber('arm/insert_toggle', Bool, self.insert_toggle)
 		rospy.Subscriber('arm/insert_adjust', Point, self.insert_adjust, queue_size=1)
@@ -43,6 +44,7 @@ class ArmSort:
 
 		rospy.sleep(1)
 
+	# Update positions of workplace objects
 	def update_positions(self, msg):
 		transforms = msg.transforms
 		for transform in transforms:
@@ -62,6 +64,7 @@ class ArmSort:
 		self.go_to_vertical(np.array([data[0], data[1], 0.17]), yaw)
 		self.go_to_vertical(np.array([data[0], data[1], 0.14]), yaw)
 
+	# Move to prism before pickup
 	def pickup_prism(self, msg):
 		if msg.data == "Red":
 			self.toggle_pickup = False
@@ -71,7 +74,7 @@ class ArmSort:
 			self.pickup_prism_helper(object_pose, self.red_prism_rot[2] + 3.14)
 			self.command_pub.publish("prism adjust")
 
-	
+	# Updates gripper location based on adjusted positions from Unity, calls the next phase of the solution once release	
 	def pickup_toggle(self,msg):
 		if msg.data:
 			trans, rot, quat = self.robot.arm.pose_ee
@@ -106,14 +109,12 @@ class ArmSort:
 			rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
 			self.go_to_vertical(self.adjusted_pos, self.yaw)
 
-	
+	# Picks up prism
 	def pickup_prism_part2(self):
 
 		self.go_to_vertical(np.array([self.adjusted_pos[0], self.adjusted_pos[1], 0.075]), self.yaw)
-
 		self.robot.gripper.close()
-
-		self.go_to_vertical(np.array([self.adjusted_pos[0], self.adjusted_pos[1], 0.13]), self.yaw)
+		self.go_to_vertical(np.array([self.adjusted_pos[0], self.adjusted_pos[1], 0.30]), self.yaw)
 
 		self.insert()
 
@@ -130,9 +131,9 @@ class ArmSort:
 		self.robot.arm.go_home()
 		# self.go_to_vertical([self.red_insert.x - 0.15, self.red_insert.y, self.red_insert.z + 0.2], self.yaw)
 		# self.go_to_pitch([self.red_insert.x - 0.15, self.red_insert.y, self.red_insert.z + 0.2], 0)
-		self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, 0.28], 0)
+		self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, 0.30], 0)
 		self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, 0.25], 0)
-		self.go_to_pitch([self.red_insert.x - 0.20, self.red_insert.y, 0.24], 0)
+		self.go_to_pitch([self.red_insert.x - 0.20, self.red_insert.y, 0.25], 0)
 		self.go_to_pitch([self.red_insert.x - 0.18, self.red_insert.y, 0.225],0)
 		rospy.loginfo("WAITING TO INSERT")
 		self.command_pub.publish("insert adjust")
@@ -189,6 +190,11 @@ class ArmSort:
 		pose = {"position": np.array([pos[0], pos[1], pos[2]]), "pitch": pitch, "roll": 0, "numerical":False, "plan": False}
 		self.robot.arm.set_ee_pose_pitch_roll(**pose)
 		rospy.sleep(0.2)
+
+	def test(self, msg):
+		if msg.data:
+			self.pickup_prism_part2()
+
 
 	def table_home(self, msg):
 		if msg.data:

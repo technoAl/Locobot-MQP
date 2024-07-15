@@ -42,7 +42,7 @@ class ArmController:
 		self.box_rot = []
 		self.yaw = 0
         rospy.sleep(1)
-
+	# Update positions of workplace objects
     def update_cup_positions(self, msg):
 	transforms = msg.transforms
 	for transform in transforms:
@@ -61,7 +61,7 @@ class ArmController:
 		self.box_trans = transform.transform.translation
 		
 
-
+	# Adjust grip on cup for pouring
     def adjust_cup(self, cup_pose):
 	new_pose = [cup_pose[1], cup_pose[0], cup_pose[2]]
 	pose = {"position": np.array([0.3, 0, 0.18]), "pitch": 1.57, "roll": 0, "numerical":False, "plan":False}
@@ -84,6 +84,7 @@ class ArmController:
 	self.robot.arm.set_ee_pose_pitch_roll(**pose)
 	rospy.sleep(0.3)
 
+	# Go to blue cup for pickup
     def blue_cup_pickup_part(self, data, yaw):
 	self.go_to_vertical(np.array([data[0], data[1], data[2] + 0.10]), 0)
 	yaw = self.robot.arm.get_joint_angle('joint_1') - yaw
@@ -116,8 +117,8 @@ class ArmController:
 	   self.blue_cup_pickup_part(object_pose, self.blue_cup_rot[2])
 	   self.command_pub.publish("arm hover")	
     
+	# Updates gripper location based on adjusted positions from Unity, calls the next phase of the solution once release
     def pickup_toggle(self,msg):
-	print("fuck")
 	if msg.data:
 	   trans, rot, quat = self.robot.arm.pose_ee
 	   self.position = np.array(trans)
@@ -149,6 +150,7 @@ class ArmController:
 	   self.adjusted_pos = [self.position[0] + x1, self.position[1] + y1, self.position[2] - 0.1]
  	   rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
 	   self.go_to_vertical(self.adjusted_pos, self.yaw)			
+	   # Picks up blue cup after adjust, moves to location above white cup
     def pickup_blue_cup_2(self):
 
 
@@ -198,7 +200,7 @@ class ArmController:
 	    self.go_to_vertical([self.box_trans.x, self.box_trans.y, 0.3], self.box_rot[2]+1.57)
 	    self.robot.arm.go_home()
 		
-			
+	# Adjust function for the pour feature, updates gripper rotation
     def pour_adjust(self, msg):
 	trans, rot, quat = self.robot.arm.pose_ee
 	position = np.array(trans)
