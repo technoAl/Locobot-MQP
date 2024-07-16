@@ -22,6 +22,7 @@ class ArmSort:
 		#rospy.Subscriber('arm/insert', Bool, self.insert)
 		rospy.Subscriber('arm/insert_toggle', Bool, self.insert_toggle)
 		rospy.Subscriber('arm/insert_adjust', Point, self.insert_adjust, queue_size=1)
+		rospy.Subscriber('arm/wipe', PointArray, self.wipe)
 		#rospy.Subscriber('arm/grip', Bool, self.gripperUpdate)
 		#rospy.Subscriber('arm/insert', Point, self.insert, queue_size=1)
 		self.command_pub = rospy.Publisher('unity/commands', String, queue_size=1)
@@ -86,6 +87,8 @@ class ArmSort:
 		else:
 			self.toggle_pickup = False
 
+	def wipe(self,msg):
+		pass
 
 	def pickup_adjust(self, msg):
 		if self.toggle_pickup:
@@ -193,7 +196,7 @@ class ArmSort:
 
 	def test(self, msg):
 		if msg.data:
-			self.pickup_prism_part2()
+			self.go_to_vertical(np.array([0.5, 0, 0.03]), self.yaw)
 
 
 	def table_home(self, msg):
