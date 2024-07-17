@@ -18,32 +18,38 @@ class ArmSort:
 		rospy.Subscriber('arm/pickup_adjust', Point, self.pickup_adjust, queue_size=1)
 		rospy.Subscriber('arm/pickup_toggle', Bool, self.pickup_toggle)
 		rospy.Subscriber('arm/go_home', Bool, self.table_home)
-		rospy.Subscriber('arm/test', String, self.test)
-		#rospy.Subscriber('arm/insert', Bool, self.insert)
 		rospy.Subscriber('arm/insert_toggle', Bool, self.insert_toggle)
 		rospy.Subscriber('arm/insert_adjust', Point, self.insert_adjust, queue_size=1)
-		rospy.Subscriber('arm/wipe', PointArray, self.wipe)
-		#rospy.Subscriber('arm/grip', Bool, self.gripperUpdate)
-		#rospy.Subscriber('arm/insert', Point, self.insert, queue_size=1)
+
+		rospy.Subscriber('arm/wipe/start_position', Point, self.start_position)
+		rospy.Subscriber('arm/wipe/ending_position', Point, self.ending_position)
+		rospy.Subscriber('arm/wipe/begin', Bool, self.begin)
+
+		rospy.Subscriber('arm/scale', Float32, self.set_scale)
+
+		rospy.Subscriber('arm/test', String, self.test)
+
 		self.command_pub = rospy.Publisher('unity/commands', String, queue_size=1)
-		rospy.init_node('arm_controller', anonymous =True)
+
 		self.robot = Robot('locobot')
-		self.offset = [0.085, 0.0, 0.0]
-		self.red_prism_rot = []
-		self.red_prism_trans = []
-		self.blue_prism_rot = []
-		self.blue_prism_trans = []
-		self.green_prism_rot = []
-		self.green_prism_trans = []
 
-		self.red_insert = []
-		self.yaw = 0
-
-		self.toggle_pickup = False
 		self.position = []
 		self.adjusted_pos = []
 
+		self.start_position = []
+		self.ending_position = []
+		self.wipe_height = 0.05
+
+		self.yaw = 0
+
+		self.scale_factor = 1.0
+
 		rospy.sleep(1)
+
+	def set_scale(self, msg):
+		if msg.data:
+			self.scale_factor = msg.data
+			rospy.loginfo("Scale set to: " + str(self.scale_factor))
 
 	# Update positions of workplace objects
 	def update_positions(self, msg):
@@ -87,29 +93,42 @@ class ArmSort:
 		else:
 			self.toggle_pickup = False
 
-	def wipe(self,msg):
-		pass
+	def start_position(self,msg):
+		self.start_position = [msg.x, msg.y, self.wipe_height]
+		rospy.loginfo("Start point set to: " + str(self.start_position))
+
+	def ending_position(self,msg):
+		self.ending_position = [msg.x, msg.y, self.wipe_height]
+		rospy.loginfo("End point set to: " + str(self.ending_position))
+
+	def begin(self, msg):
+		if msg.data:
+
+			num_points = 5
+			step = 1.0 / num_points
+			path = []
+
+			start_pose = np.array([self.start_position[0], self.start_position[1], self.start_position[2]])
+			self.go_to_vertical(start_pose, self.yaw)
+
+			for i in range(1, num_points + 1):
+				point = start_pose + (i * step) * (np.array([self.ending_position[0], self.ending_position[1], self.ending_position[2]]) - start_pose)
+				path.append(point)
+
+			for aPoint in path:
+				self.go_to_vertical(aPoint, self.yaw)
+
 
 	def pickup_adjust(self, msg):
 		if self.toggle_pickup:
-			#trans, rot, quat = self.robot.arm.pose_ee
-		#position = np.array(trans)
-		
-		#x = position[0]
-		#y = position[1]
-		#z = position[2]
 			x1 = msg.z
 			y1 = -msg.x
-			#theta = math.atan2(y, x)
-			
-			#x -= (x1 * math.cos(theta) + y1 * math.sin(theta))], 0)
 
-			#y -= (x1 * math.sin(theta) + y1 * math.cos(theta))
-			#adjusted_pos = np.array([x ,y, z-0.1])
-			#print(str(x) +" "  + str(y))
+			x1 = x1 * self.scale_factor
+			y1 = y1 * self.scale_factor
 			
 			self.adjusted_pos = [self.position[0] + x1, self.position[1] + y1, self.position[2] - 0.1]
-			rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
+			#rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
 			self.go_to_vertical(self.adjusted_pos, self.yaw)
 
 	# Picks up prism
@@ -125,8 +144,8 @@ class ArmSort:
 		x = msg.position.x
 		y = msg.position.y
 		z = msg.position.z
-		pose = {"position": np.array([x,y,z]), "pitch": 0, "roll": 0, "numerical": False, "plan": False}
 
+		pose = {"position": np.array([x,y,z]), "pitch": 0, "roll": 0, "numerical": False, "plan": False}
 		self.robot.arm.set_ee_pose_pitch_roll(**pose)
 	
 	def insert(self):
@@ -138,7 +157,6 @@ class ArmSort:
 		self.go_to_pitch([self.red_insert.x - 0.2, self.red_insert.y, 0.25], 0)
 		self.go_to_pitch([self.red_insert.x - 0.20, self.red_insert.y, 0.25], 0)
 		self.go_to_pitch([self.red_insert.x - 0.18, self.red_insert.y, 0.225],0)
-		rospy.loginfo("WAITING TO INSERT")
 		self.command_pub.publish("insert adjust")
 	
 	def insert_toggle(self, msg):
@@ -156,30 +174,16 @@ class ArmSort:
 
 	def insert_adjust(self, msg):
 		if self.toggle_pickup:
-			#trans, rot, quat = self.robot.arm.pose_ee
-		#position = np.array(trans)
-		
-		#x = position[0]
-		#y = position[1]
-		#z = position[2]
-			x1 = msg.z
-			y1 = -msg.x
-			#theta = math.atan2(y, x)
-			
-			#x -= (x1 * math.cos(theta) + y1 * math.sin(theta))], 0)
-
-			#y -= (x1 * math.sin(theta) + y1 * math.cos(theta))
-			#adjusted_pos = np.array([x ,y, z-0.1])
-			#print(str(x) +" "  + str(y))
-			
+			x1 = msg.z * self.scale_factor
+			y1 = -msg.x * self.scale_factor			
 			self.adjusted_pos = [self.position[0] + x1, self.position[1] + y1, self.position[2] - 0.1]
-			rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
+			#rospy.loginfo("x: " + str(msg.x) + " y: " + str(msg.y))
 			self.go_to_pitch(self.adjusted_pos, 0)
 
 	def go_to_vertical(self, pos, roll):
 		pose = {"position": np.array([pos[0], pos[1], pos[2] + 0.10]), "pitch": 1.57, "roll": roll, "numerical":False, "plan": False}
 		self.robot.arm.set_ee_pose_pitch_roll(**pose)
-		rospy.sleep(0.3)
+		#rospy.sleep(0.3)
 
 	def go_to_horizontal(self, pos):
 		hyp = math.sqrt(pos[0] ** 2 + pos[1] ** 2)
